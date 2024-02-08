@@ -23,7 +23,8 @@
 
 struct peer predecessor; 
 struct peer self;
-struct peer successor; 
+struct peer successor;
+struct peer anchor;
 int dht_socket;
 
 
@@ -95,6 +96,15 @@ static void dht_send(struct dht_message* msg, const struct peer* peer) {
         perror("sendto");
         exit(1);
     }
+}
+
+void send_join(const struct peer peer){
+    struct dht_message join = {
+            .flags = JOIN,
+            .hash = 0,
+            .peer = self,
+    };
+    dht_send(&join, &peer);
 }
 
 

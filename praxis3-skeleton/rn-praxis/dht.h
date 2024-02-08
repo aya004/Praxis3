@@ -20,6 +20,9 @@ typedef uint16_t dht_id;
 enum {
     LOOKUP,
     REPLY,
+    STABILIZE,
+    NOTIFY,
+    JOIN,
     N_OPCODES,
 };
 
@@ -75,6 +78,8 @@ extern struct peer self;
  * description.
  */
 extern struct peer successor;
+
+extern struct peer anchor;
 
 /**
  * The socket used for communicating with the DHT

@@ -373,7 +373,13 @@ int main(int argc, char** argv) {
         // If running in static mode, use the provided predecessor and successor information.
         predecessor = peer_from_args(getenv("PRED_ID"), getenv("PRED_IP"), getenv("PRED_PORT"));
         successor = peer_from_args(getenv("SUCC_ID"), getenv("SUCC_IP"), getenv("SUCC_PORT"));
-    } else {
+    }
+    if(argc == 6){
+        anchor = peer_from_args("0", argv[4], argv[5]);
+        fprintf(stderr, "%d\n", anchor.port);
+        send_join(anchor);
+    }
+    else {
         // If neither static mode nor join mode, set predecessor and successor to self.
         predecessor = self;
         successor = self;
