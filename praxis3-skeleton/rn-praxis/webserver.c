@@ -377,6 +377,7 @@ int main(int argc, char** argv) {
         fprintf(stderr, "pred: %d, self: %d, succ: %d\n", predecessor.port, self.port, successor.port);
 
         if(self.id == 4096 && self.port == 4711){
+
             stabilize();
         }
 

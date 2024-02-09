@@ -111,14 +111,12 @@ void send_join(const struct peer peer){
 void stabilize(){
 
     sleep(1.0);
-
-    struct dht_message stabilize = {
+    struct dht_message msg = {
             .flags = STABILIZE,
             .hash = 0,
             .peer = self,
     };
-
-    dht_send(&stabilize, &successor);
+    dht_send(&msg, &successor);
 }
 
 
@@ -132,6 +130,17 @@ void notify(struct dht_message* msg){
     dht_send(&notify, &(msg->peer));
 }
 
+static void succ_update(struct dht_message* msg){
+    if(!peer_cmp(&successor, &(msg->peer))){
+        successor = msg->peer;
+        struct dht_message update_msg = {
+                .flags = STABILIZE,
+                .hash = 0,
+                .peer = self,
+        };
+        dht_send(&update_msg, &successor);
+    }
+}
 
 /**
  * Process the given join
@@ -228,6 +237,8 @@ static void dht_process_message(struct dht_message* msg) {
         process_join(msg);
     } else if (msg->flags == STABILIZE){
         notify(msg);
+    } else if (msg->flags == NOTIFY){
+        succ_update(msg);
     } else {
         printf("Received invalid DHT Message\n");
     }
