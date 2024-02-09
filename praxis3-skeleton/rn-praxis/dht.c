@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <time.h>
+#include <unistd.h>
 
 #include <openssl/sha.h>
 
@@ -106,6 +107,43 @@ void send_join(const struct peer peer){
     };
     dht_send(&join, &peer);
 }
+void stabilize(){
+
+    sleep(1.0);
+    struct dht_message stabilize = {
+            .flags = STABILIZE,
+            .hash = 0,
+            .peer = self,
+    };
+
+    dht_send(&stabilize, &successor);
+
+}
+
+
+/**
+ * Process the given join
+ *
+ * If our self is responsible for the joined ID, a notify is sent to the
+ * join. Otherwise, the join message is forwarded to our successor.
+ */
+static void process_join(struct dht_message* join){
+
+    if (!peer_cmp(&self, dht_responsible(join->peer.id))) {
+        dht_send(join, &successor);
+        return;
+    }
+
+    struct dht_message notify = {
+            .flags = NOTIFY,
+            .hash = 0,
+            .peer = self,
+    };
+    predecessor = join->peer;
+    dht_send(&notify, &(join->peer));
+
+
+}
 
 
 /**
@@ -174,6 +212,8 @@ static void dht_process_message(struct dht_message* msg) {
         process_lookup(msg);
     } else if (msg->flags == REPLY) {
         process_reply(msg);
+    } else if(msg->flags == JOIN){
+        process_join(msg);
     } else {
         printf("Received invalid DHT Message\n");
     }
@@ -262,4 +302,5 @@ void dht_handle_socket(void) {
 
     dht_recv(&msg, &address, &address_length);
     dht_process_message(&msg);
+
 }
