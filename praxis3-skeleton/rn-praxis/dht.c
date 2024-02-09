@@ -165,6 +165,38 @@ static void process_reply(const struct dht_message* reply) {
     lookup_cache[oldest_idx].peer = reply->peer;
 }
 
+static void process_join(const struct dht_message* join) {
+    // cehck if joining peer is dircet successor of current node
+    if (join->peer.id > self.id && (join->peer.id < successor.id || peer_cmp(&successor, &self))) {
+        
+        // TODO: check if i did it the wrong way
+        // i think i shopul also inform or instead infrom the joinijng node about the curretn node is its new predessor
+        //and the current nodes successor is the joining node new successor
+        // inform successor for new peer
+        struct dht_message notify_msg = {
+            .flags = NOTIFY,
+            .peer = join->peer,
+        };
+        dht_send(&notify_msg, &successor);
+        // update successor
+        successor = join->peer;
+    } else if (peer_cmp(&successor, &self)) {
+        // network just has one node
+        successor = join->peer;
+        predecessor = join->peer;
+
+        // inform successor for new peer
+        struct dht_message notify_msg = {
+            .flags = NOTIFY,
+            .peer = self, 
+        };
+        dht_send(&notify_msg, &join->peer);
+    } else {
+        // forward jon message 
+        dht_send(join, &successor);
+    }
+}
+
 
 /**
  * Process an incoming DHT message
@@ -174,6 +206,8 @@ static void dht_process_message(struct dht_message* msg) {
         process_lookup(msg);
     } else if (msg->flags == REPLY) {
         process_reply(msg);
+    } else if (msg->flags == JOIN) {
+        process_join(msg);
     } else {
         printf("Received invalid DHT Message\n");
     }
