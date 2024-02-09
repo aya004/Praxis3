@@ -65,6 +65,7 @@ struct __attribute__((packed)) dht_message {
  * description.
  */
 extern struct peer predecessor;
+extern struct peer predecessor;
 
 /**
  * Our own identity in the DHT

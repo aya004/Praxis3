@@ -373,7 +373,12 @@ int main(int argc, char** argv) {
         // If running in static mode, use the provided predecessor and successor information.
         predecessor = peer_from_args(getenv("PRED_ID"), getenv("PRED_IP"), getenv("PRED_PORT"));
         successor = peer_from_args(getenv("SUCC_ID"), getenv("SUCC_IP"), getenv("SUCC_PORT"));
-        stabilize();
+        fprintf(stderr, "pred: %d, self: %d, succ: %d\n", predecessor.id, self.id, successor.id);
+        fprintf(stderr, "pred: %d, self: %d, succ: %d\n", predecessor.port, self.port, successor.port);
+
+        if(self.id == 4096 && self.port == 4711){
+            stabilize();
+        }
 
     }
      else if(argc == 6){
@@ -393,6 +398,7 @@ int main(int argc, char** argv) {
         { .fd = server_socket, .events = POLLIN },
         { .fd = dht_socket, .events = POLLIN },
     };
+    fprintf(stderr, "test1\n");
 
     struct connection_state state = {0};
     while (true) {
@@ -406,7 +412,9 @@ int main(int argc, char** argv) {
 
         // Process events on the monitored sockets.
         for (size_t i = 0; i < sizeof(sockets) / sizeof(sockets[0]); i += 1) {
+
             if (sockets[i].revents != POLLIN) {
+
                 // If there are no POLLIN events on the socket, continue to the next iteration.
                 continue;
             }
@@ -430,8 +438,10 @@ int main(int argc, char** argv) {
                 }
             } else if (s == dht_socket) {
                 // If the event is on the dht_socket, handle the DHT-related socket event.
+
                 dht_handle_socket();
             } else {
+
                 assert(s == state.sock);
 
                 // Call the 'handle_connection' function to process the incoming data on the socket.
@@ -442,6 +452,7 @@ int main(int argc, char** argv) {
                     sockets[2].events = 0;
                 }
             }
+
         }
 
     }

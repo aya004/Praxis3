@@ -26,6 +26,7 @@ struct peer predecessor;
 struct peer self;
 struct peer successor;
 struct peer anchor;
+struct peer previous_predecessor;
 int dht_socket;
 
 
@@ -110,6 +111,7 @@ void send_join(const struct peer peer){
 void stabilize(){
 
     sleep(1.0);
+
     struct dht_message stabilize = {
             .flags = STABILIZE,
             .hash = 0,
@@ -117,7 +119,17 @@ void stabilize(){
     };
 
     dht_send(&stabilize, &successor);
+}
 
+
+void notify(struct dht_message* msg){
+
+    struct dht_message notify = {
+            .flags = NOTIFY,
+            .hash = 0,
+            .peer = predecessor,
+    };
+    dht_send(&notify, &(msg->peer));
 }
 
 
@@ -212,8 +224,10 @@ static void dht_process_message(struct dht_message* msg) {
         process_lookup(msg);
     } else if (msg->flags == REPLY) {
         process_reply(msg);
-    } else if(msg->flags == JOIN){
+    } else if (msg->flags == JOIN){
         process_join(msg);
+    } else if (msg->flags == STABILIZE){
+        notify(msg);
     } else {
         printf("Received invalid DHT Message\n");
     }
@@ -225,8 +239,8 @@ static void dht_process_message(struct dht_message* msg) {
  */
 static ssize_t dht_recv(struct dht_message* msg, struct sockaddr* address, socklen_t* address_length) {
     ssize_t result = recvfrom(dht_socket, msg, sizeof(struct dht_message), 0, address, address_length);
-
     if (result < 0) {
+
         perror("recv");
         exit(EXIT_FAILURE);
     }
@@ -299,7 +313,6 @@ void dht_handle_socket(void) {
     struct sockaddr address = {0};
     socklen_t address_length = sizeof(struct sockaddr);
     struct dht_message msg = {0};
-
     dht_recv(&msg, &address, &address_length);
     dht_process_message(&msg);
 
