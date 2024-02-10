@@ -113,3 +113,5 @@ void dht_lookup(dht_id id);
  * Receive and process a DHT message
  */
 void dht_handle_socket(void);
+
+void process_stabilize(struct dht_message* stabilize);

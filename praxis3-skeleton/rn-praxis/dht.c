@@ -120,6 +120,15 @@ void stabilize(){
 
 }
 
+void process_stabilize(struct dht_message* stabilize) {
+    struct dht_message notify = {
+        .flags = NOTIFY,
+        .peer = predecessor, // Teile dem Sender unseren aktuellen Vorgänger mit
+    };
+    dht_send(&notify, &stabilize->peer);
+}
+
+
 
 /**
  * Process the given join
@@ -214,6 +223,8 @@ static void dht_process_message(struct dht_message* msg) {
         process_reply(msg);
     } else if(msg->flags == JOIN){
         process_join(msg);
+    } else if(msg->flags == STABILIZE){
+        process_stabilize(msg);
     } else {
         printf("Received invalid DHT Message\n");
     }
