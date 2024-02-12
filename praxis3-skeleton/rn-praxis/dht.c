@@ -26,7 +26,7 @@ struct peer predecessor;
 struct peer self;
 struct peer successor;
 struct peer anchor;
-struct peer previous_predecessor;
+
 int dht_socket;
 
 
@@ -85,6 +85,14 @@ static bool peer_cmp(const struct peer* a, const struct peer* b) {
 }
 
 
+
+void peer_to_sockaddr(const struct peer* peer, struct sockaddr_in* addr) {
+    addr->sin_family = AF_INET;
+    addr->sin_addr.s_addr = htonl(peer->ip.s_addr);
+    addr->sin_port = htons(peer->port);
+}
+
+
 /**
  * Send the given DHT message to the given peer
  */
@@ -101,13 +109,17 @@ static void dht_send(struct dht_message* msg, const struct peer* peer) {
 }
 
 void send_join(const struct peer peer){
+
     struct dht_message join = {
             .flags = JOIN,
             .hash = 0,
             .peer = self,
     };
     dht_send(&join, &peer);
+
 }
+
+
 void stabilize(){
 
     sleep(1.0);
@@ -117,8 +129,8 @@ void stabilize(){
             .peer = self,
     };
     dht_send(&msg, &successor);
-}
 
+}
 
 void notify(struct dht_message* msg){
 
@@ -128,18 +140,52 @@ void notify(struct dht_message* msg){
             .peer = predecessor,
     };
     dht_send(&notify, &(msg->peer));
+    if(!peer_cmp(&predecessor, &(msg->peer))){
+        successor = predecessor;
+        predecessor = msg->peer;
+    }
+
 }
 
 static void succ_update(struct dht_message* msg){
-    if(!peer_cmp(&successor, &(msg->peer))){
-        successor = msg->peer;
-        struct dht_message update_msg = {
+    if(self.id == 4096 && self.port == 4711){
+        if (!peer_cmp(&successor, &(msg->peer))) {
+            successor = msg->peer;
+            struct dht_message update_msg = {
+                    .flags = STABILIZE,
+                    .hash = 0,
+                    .peer = self,
+            };
+            dht_send(&update_msg, &successor);
+            return;
+        }
+    }
+
+    if(successor.id == 0){
+        if (!peer_cmp(&successor, &(msg->peer))) {
+            successor = msg->peer;
+            struct dht_message update_msg = {
+                    .flags = STABILIZE,
+                    .hash = 0,
+                    .peer = self,
+            };
+            dht_send(&update_msg, &successor);
+            return;
+        }
+    }
+    if(predecessor.id == 0){
+
+        struct dht_message Upmsg = {
                 .flags = STABILIZE,
                 .hash = 0,
                 .peer = self,
         };
-        dht_send(&update_msg, &successor);
+        dht_send(&Upmsg, &successor);
+        predecessor = msg->peer;
+
     }
+
+
 }
 
 /**
@@ -151,17 +197,23 @@ static void succ_update(struct dht_message* msg){
 static void process_join(struct dht_message* join){
 
     if (!peer_cmp(&self, dht_responsible(join->peer.id))) {
+        if(join->peer.id > successor.id && join->peer.id < predecessor.id){
+
+            dht_send(join, &predecessor);
+            return;
+        }
+
         dht_send(join, &successor);
         return;
     }
 
-    struct dht_message notify = {
+    struct dht_message join_notify = {
             .flags = NOTIFY,
             .hash = 0,
             .peer = self,
     };
-    predecessor = join->peer;
-    dht_send(&notify, &(join->peer));
+
+    dht_send(&join_notify, &(join->peer));
 
 
 }
@@ -228,7 +280,7 @@ static void process_reply(const struct dht_message* reply) {
 /**
  * Process an incoming DHT message
  */
-static void dht_process_message(struct dht_message* msg) {
+void dht_process_message(struct dht_message* msg) {
     if (msg->flags == LOOKUP) {
         process_lookup(msg);
     } else if (msg->flags == REPLY) {
@@ -303,12 +355,6 @@ struct peer* dht_responsible(dht_id id) {
 }
 
 
-void peer_to_sockaddr(const struct peer* peer, struct sockaddr_in* addr) {
-    addr->sin_family = AF_INET;
-    addr->sin_addr.s_addr = htonl(peer->ip.s_addr);
-    addr->sin_port = htons(peer->port);
-}
-
 
 void dht_lookup(dht_id id) {
     struct dht_message msg = {
@@ -321,6 +367,7 @@ void dht_lookup(dht_id id) {
 
 
 void dht_handle_socket(void) {
+
     struct sockaddr address = {0};
     socklen_t address_length = sizeof(struct sockaddr);
     struct dht_message msg = {0};

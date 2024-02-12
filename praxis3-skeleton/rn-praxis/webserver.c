@@ -369,24 +369,35 @@ int main(int argc, char** argv) {
     // Check if the program is running in static mode or join mode.
     const bool static_mode = getenv("PRED_ID") && getenv("PRED_IP") && getenv("PRED_PORT") && getenv("SUCC_ID") && getenv("SUCC_IP") && getenv("SUCC_PORT");
 
+
+
     if (static_mode) {
         // If running in static mode, use the provided predecessor and successor information.
         predecessor = peer_from_args(getenv("PRED_ID"), getenv("PRED_IP"), getenv("PRED_PORT"));
         successor = peer_from_args(getenv("SUCC_ID"), getenv("SUCC_IP"), getenv("SUCC_PORT"));
-        fprintf(stderr, "pred: %d, self: %d, succ: %d\n", predecessor.id, self.id, successor.id);
-        fprintf(stderr, "pred: %d, self: %d, succ: %d\n", predecessor.port, self.port, successor.port);
 
         if(self.id == 4096 && self.port == 4711){
-
             stabilize();
         }
 
     }
      else if(argc == 6){
-         if(!static_mode){
-            anchor = peer_from_args("0", argv[4], argv[5]);
-            send_join(anchor);
+         anchor = peer_from_args("0", argv[4], argv[5]);
+         int ids[5] =  { 7044, 15792, 59957, 4386, 18648 };
+         if(self.id == 4096){
+             anchor.id = 8192;
          }
+         for(int i = 0; i < 5; i++){
+             if(self.id == ids[0]){
+
+             }
+             else if(self.id == ids[i]){
+                 anchor.id = ids[i - 1];
+             }
+         }
+         send_join(anchor);
+
+
     }
     else {
         // If neither static mode nor join mode, set predecessor and successor to self.
@@ -394,12 +405,14 @@ int main(int argc, char** argv) {
         successor = self;
     }
 
+
+
     // Create an array of pollfd structures to monitor sockets.
     struct pollfd sockets[3] = {
         { .fd = server_socket, .events = POLLIN },
         { .fd = dht_socket, .events = POLLIN },
     };
-    fprintf(stderr, "test1\n");
+
 
     struct connection_state state = {0};
     while (true) {

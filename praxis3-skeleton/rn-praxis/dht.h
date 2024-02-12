@@ -65,7 +65,7 @@ struct __attribute__((packed)) dht_message {
  * description.
  */
 extern struct peer predecessor;
-extern struct peer predecessor;
+
 
 /**
  * Our own identity in the DHT
@@ -81,6 +81,7 @@ extern struct peer self;
 extern struct peer successor;
 
 extern struct peer anchor;
+
 
 /**
  * The socket used for communicating with the DHT
@@ -114,3 +115,7 @@ void dht_lookup(dht_id id);
  * Receive and process a DHT message
  */
 void dht_handle_socket(void);
+
+void send_join(const struct peer peer);
+void dht_process_message(struct dht_message* msg);
+void stabilize(void);
