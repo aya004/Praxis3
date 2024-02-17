@@ -82,7 +82,6 @@ extern struct peer successor;
 
 extern struct peer anchor;
 
-
 /**
  * The socket used for communicating with the DHT
  */
@@ -118,4 +117,6 @@ void dht_handle_socket(void);
 
 void send_join(const struct peer peer);
 void dht_process_message(struct dht_message* msg);
+ssize_t dht_recv(struct dht_message* msg, struct sockaddr* address, socklen_t* address_length);
 void stabilize(void);
+unsigned long time_ms(void);

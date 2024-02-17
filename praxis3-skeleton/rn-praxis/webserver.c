@@ -1,3 +1,4 @@
+#include <pthread.h>
 #include <assert.h>
 #include <arpa/inet.h>
 #include <errno.h>
@@ -20,12 +21,12 @@
 
 #define MAX_RESOURCES 100
 
-
 struct tuple resources[MAX_RESOURCES] = {
     {"/static/foo", "Foo", sizeof "Foo" - 1},
     {"/static/bar", "Bar", sizeof "Bar" - 1},
     {"/static/baz", "Baz", sizeof "Baz" - 1}
 };
+
 
 
 /**
@@ -342,6 +343,16 @@ static struct peer peer_from_args(const string id, const string ip, const string
     // Return the created peer struct
     return result;
 }
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+void *pollOut(){
+    pthread_mutex_lock(&mutex);
+    if(self.id == 4096 && self.port == 4711) {
+        stabilize();
+    }
+    pthread_mutex_unlock(&mutex);
+    pthread_exit(NULL);
+
+}
 
 /**
 *  The program expects 3, 4, or 6 arguments; otherwise, it returns EXIT_FAILURE.
@@ -376,9 +387,6 @@ int main(int argc, char** argv) {
         predecessor = peer_from_args(getenv("PRED_ID"), getenv("PRED_IP"), getenv("PRED_PORT"));
         successor = peer_from_args(getenv("SUCC_ID"), getenv("SUCC_IP"), getenv("SUCC_PORT"));
 
-        if(self.id == 4096 && self.port == 4711){
-            stabilize();
-        }
 
     }
      else if(argc == 6){
@@ -395,6 +403,8 @@ int main(int argc, char** argv) {
                  anchor.id = ids[i - 1];
              }
          }
+        fprintf(stderr, "---------------------------\n");
+        fprintf(stderr, "self: %d, %d\n", self.id, self.port);
          send_join(anchor);
 
 
@@ -411,27 +421,36 @@ int main(int argc, char** argv) {
     struct pollfd sockets[3] = {
         { .fd = server_socket, .events = POLLIN },
         { .fd = dht_socket, .events = POLLIN },
+
     };
 
 
     struct connection_state state = {0};
-    while (true) {
 
-        // Use poll() to wait for events on the monitored sockets.
+
+    while (true) {
+        pthread_t thread;
+        if(pthread_create(&thread, NULL, pollOut, NULL) != 0){
+            perror("pthread");
+            exit(EXIT_FAILURE);
+        }
+
         int ready = poll(sockets, sizeof(sockets) / sizeof(sockets[0]), -1);
+
         if (ready == -1) {
             perror("poll");
             exit(EXIT_FAILURE);
         }
 
+
         // Process events on the monitored sockets.
         for (size_t i = 0; i < sizeof(sockets) / sizeof(sockets[0]); i += 1) {
 
             if (sockets[i].revents != POLLIN) {
-
                 // If there are no POLLIN events on the socket, continue to the next iteration.
                 continue;
             }
+
             int s = sockets[i].fd;
 
             if (s == server_socket) {
@@ -451,8 +470,8 @@ int main(int argc, char** argv) {
                     sockets[2].events = POLLIN;
                 }
             } else if (s == dht_socket) {
-                // If the event is on the dht_socket, handle the DHT-related socket event.
 
+                // If the event is on the dht_socket, handle the DHT-related socket event.
                 dht_handle_socket();
             } else {
 
@@ -468,8 +487,14 @@ int main(int argc, char** argv) {
             }
 
         }
+        if(pthread_join(thread, NULL) != 0){
+            perror("Thread join");
+            exit(EXIT_FAILURE);
+        }
 
     }
+
+
 
     return EXIT_SUCCESS;
 }

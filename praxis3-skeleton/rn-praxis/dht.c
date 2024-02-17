@@ -26,7 +26,6 @@ struct peer predecessor;
 struct peer self;
 struct peer successor;
 struct peer anchor;
-
 int dht_socket;
 
 
@@ -128,8 +127,8 @@ void stabilize(){
             .hash = 0,
             .peer = self,
     };
-    dht_send(&msg, &successor);
 
+    dht_send(&msg, &successor);
 }
 
 void notify(struct dht_message* msg){
@@ -148,6 +147,7 @@ void notify(struct dht_message* msg){
 }
 
 static void succ_update(struct dht_message* msg){
+
     if(self.id == 4096 && self.port == 4711){
         if (!peer_cmp(&successor, &(msg->peer))) {
             successor = msg->peer;
@@ -161,7 +161,7 @@ static void succ_update(struct dht_message* msg){
         }
     }
 
-    if(successor.id == 0){
+    if(successor.port == 0){
         if (!peer_cmp(&successor, &(msg->peer))) {
             successor = msg->peer;
             struct dht_message update_msg = {
@@ -173,8 +173,7 @@ static void succ_update(struct dht_message* msg){
             return;
         }
     }
-    if(predecessor.id == 0){
-
+    if(predecessor.port == 0){
         struct dht_message Upmsg = {
                 .flags = STABILIZE,
                 .hash = 0,
@@ -182,9 +181,7 @@ static void succ_update(struct dht_message* msg){
         };
         dht_send(&Upmsg, &successor);
         predecessor = msg->peer;
-
     }
-
 
 }
 
@@ -198,7 +195,6 @@ static void process_join(struct dht_message* join){
 
     if (!peer_cmp(&self, dht_responsible(join->peer.id))) {
         if(join->peer.id > successor.id && join->peer.id < predecessor.id){
-
             dht_send(join, &predecessor);
             return;
         }
@@ -214,7 +210,6 @@ static void process_join(struct dht_message* join){
     };
 
     dht_send(&join_notify, &(join->peer));
-
 
 }
 
@@ -300,7 +295,7 @@ void dht_process_message(struct dht_message* msg) {
 /**
  * Receive a DHT message from the `dht_socket`
  */
-static ssize_t dht_recv(struct dht_message* msg, struct sockaddr* address, socklen_t* address_length) {
+ssize_t dht_recv(struct dht_message* msg, struct sockaddr* address, socklen_t* address_length) {
     ssize_t result = recvfrom(dht_socket, msg, sizeof(struct dht_message), 0, address, address_length);
     if (result < 0) {
 
@@ -373,5 +368,6 @@ void dht_handle_socket(void) {
     struct dht_message msg = {0};
     dht_recv(&msg, &address, &address_length);
     dht_process_message(&msg);
+
 
 }

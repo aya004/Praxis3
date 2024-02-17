@@ -8,6 +8,10 @@ add_executable (webserver webserver.c http.c util.c data.c dht.c)
 target_compile_options (webserver PRIVATE -Wall -Wextra -Wpedantic)
 target_link_libraries(webserver PRIVATE ${OPENSSL_LIBRARIES} -lm)
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+target_link_libraries(webserver PRIVATE Threads::Threads)
+
 # Packaging
 set(CPACK_SOURCE_GENERATOR "TGZ")
 set(CPACK_SOURCE_IGNORE_FILES
