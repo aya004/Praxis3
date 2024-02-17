@@ -29,6 +29,7 @@ struct peer anchor;
 int dht_socket;
 
 
+
 /**
  * Table for the most recent lookup replies.
  */
@@ -120,7 +121,6 @@ void send_join(const struct peer peer){
 
 
 void stabilize(){
-
     sleep(1.0);
     struct dht_message msg = {
             .flags = STABILIZE,
@@ -157,6 +157,7 @@ static void succ_update(struct dht_message* msg){
                     .peer = self,
             };
             dht_send(&update_msg, &successor);
+
             return;
         }
     }
@@ -181,6 +182,7 @@ static void succ_update(struct dht_message* msg){
         };
         dht_send(&Upmsg, &successor);
         predecessor = msg->peer;
+
     }
 
 }

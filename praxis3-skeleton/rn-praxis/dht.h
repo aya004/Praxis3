@@ -87,6 +87,7 @@ extern struct peer anchor;
  */
 extern int dht_socket;
 
+
 /**
  * Compute the ID associated with the given string
  */

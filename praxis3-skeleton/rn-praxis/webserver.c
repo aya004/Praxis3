@@ -346,12 +346,13 @@ static struct peer peer_from_args(const string id, const string ip, const string
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 void *pollOut(){
     pthread_mutex_lock(&mutex);
-    if(self.id == 4096 && self.port == 4711) {
+
+    if(self.id == 4096 && self.port == 4711){
         stabilize();
     }
+
     pthread_mutex_unlock(&mutex);
     pthread_exit(NULL);
-
 }
 
 /**
@@ -403,8 +404,6 @@ int main(int argc, char** argv) {
                  anchor.id = ids[i - 1];
              }
          }
-        fprintf(stderr, "---------------------------\n");
-        fprintf(stderr, "self: %d, %d\n", self.id, self.port);
          send_join(anchor);
 
 
@@ -473,6 +472,7 @@ int main(int argc, char** argv) {
 
                 // If the event is on the dht_socket, handle the DHT-related socket event.
                 dht_handle_socket();
+
             } else {
 
                 assert(s == state.sock);
